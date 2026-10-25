@@ -1,0 +1,5 @@
+.env*
+.vercel
+node_modules/
+# 남의 디자인 캡처는 공개 저장소에 올리지 않는다
+docs/design/reference-*
