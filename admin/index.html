@@ -32,6 +32,12 @@
     .card-date { width: 100%; font-size: .9rem; color: rgba(31, 59, 123, .7); }
     .copy { margin-top: 10px; padding: 6px 0; font: inherit; font-size: 1.05rem; font-weight: 700; color: var(--navy); background: none; border: 0; text-decoration: underline; cursor: pointer; text-align: left; }
     .status { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .card-source { margin-top: 6px; font-size: .92rem; color: rgba(31, 59, 123, .8); }
+    .channels { margin-top: 20px; padding: 18px 20px; background: var(--white); border: var(--line); border-radius: var(--radius); }
+    .channels h2 { font-size: 1.05rem; font-weight: 800; }
+    .channels ul { display: grid; gap: 6px; margin: 10px 0 0; padding: 0; list-style: none; }
+    .channels li { display: flex; justify-content: space-between; gap: 12px; padding-bottom: 6px; border-bottom: 1px dashed rgba(31, 59, 123, .25); }
+    .channels li strong { font-weight: 800; }
     .late-note { margin-top: 8px; font-weight: 700; color: #C2410C; }
     .msg { margin-top: 16px; font-weight: 700; }
     .empty { margin-top: 20px; padding: 24px; text-align: center; background: var(--white); border: 2px dashed rgba(31, 59, 123, .4); border-radius: var(--radius); }
@@ -57,6 +63,10 @@
         <button class="logout" id="logout" type="button">나가기</button>
       </div>
       <p class="count">새 신청<strong id="new-count">0</strong></p>
+      <section class="channels" aria-labelledby="channels-title">
+        <h2 id="channels-title">유입 채널별 신청 (전체)</h2>
+        <ul id="channels"></ul>
+      </section>
       <div class="filters" role="group" aria-label="상태별 보기">
         <button type="button" data-filter="새 문의" aria-pressed="true">새 문의</button>
         <button type="button" data-filter="연락함" aria-pressed="false">연락함</button>
@@ -102,8 +112,38 @@
     const fmt = (iso) => new Date(iso).toLocaleString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit' });
     const isLate = (row) => row.status === '새 문의' && Date.now() - new Date(row.created_at).getTime() > 48 * 3600 * 1000;
 
+    // 유입 채널: UTM source가 있으면 그것, 없으면 들어온 사이트, 둘 다 없으면 직접 방문
+    const channelOf = (row) => row.utm_source || row.referrer || '직접 방문';
+    const sourceText = (row) => {
+      if (row.utm_source) return [row.utm_source, row.utm_medium, row.utm_campaign].filter(Boolean).join(' / ');
+      return row.referrer ? `${row.referrer} (링크)` : '직접 방문';
+    };
+
+    function renderChannels() {
+      const counts = new Map();
+      rows.forEach((r) => counts.set(channelOf(r), (counts.get(channelOf(r)) || 0) + 1));
+      const list = $('channels');
+      list.replaceChildren();
+      if (!counts.size) {
+        const li = document.createElement('li');
+        li.textContent = '아직 들어온 신청이 없어요.';
+        list.append(li);
+        return;
+      }
+      [...counts].sort((a, b) => b[1] - a[1]).forEach(([name, n]) => {
+        const li = document.createElement('li');
+        const label = document.createElement('span');
+        label.textContent = name;
+        const num = document.createElement('strong');
+        num.textContent = `${n}건`;
+        li.append(label, num);
+        list.append(li);
+      });
+    }
+
     function render() {
       $('new-count').textContent = rows.filter((r) => r.status === '새 문의').length;
+      renderChannels();
       document.querySelectorAll('[data-filter]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.filter === filter)));
       const shown = filter === '전체' ? rows : rows.filter((r) => r.status === filter);
       const list = $('list');
@@ -123,12 +163,14 @@
             <span class="card-name"></span><span class="card-kind"></span>
             <span class="card-date"></span>
           </div>
+          <p class="card-source"></p>
           <button class="copy" type="button" title="눌러서 복사"></button>
           ${isLate(row) ? '<p class="late-note">48시간 넘게 연락을 기다리고 있어요.</p>' : ''}
           <div class="status" role="group" aria-label="처리 상태"></div>`;
         li.querySelector('.card-name').textContent = row.name;
         li.querySelector('.card-kind').textContent = row.kind;
         li.querySelector('.card-date').textContent = fmt(row.created_at);
+        li.querySelector('.card-source').textContent = `유입: ${sourceText(row)}`;
         const copy = li.querySelector('.copy');
         copy.textContent = row.contact;
         copy.addEventListener('click', async () => {

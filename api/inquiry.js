@@ -1,6 +1,7 @@
 const SB_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
 const KINDS = ['강의', '컨설팅', '협업'];
+const SOURCE_FIELDS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'referrer'];
 const clip = (v, n) => String(v ?? '').trim().slice(0, n);
 const sbHeaders = () => ({
   apikey: SB_KEY,
@@ -15,6 +16,7 @@ module.exports = async (req, res) => {
   if (typeof b === 'string') { try { b = JSON.parse(b); } catch { b = {}; } }
   if (b.website) return res.status(200).json({ ok: true }); // 스팸 함정 칸(사람에게는 안 보임)
   const row = { name: clip(b.name, 50), contact: clip(b.contact, 100), kind: clip(b.kind, 10), consent: b.consent === true };
+  for (const k of SOURCE_FIELDS) { const v = clip(b[k], 100); if (v) row[k] = v; }
   if (!row.name || !row.contact) return res.status(400).json({ error: '이름과 연락처를 적어 주세요.' });
   if (!KINDS.includes(row.kind)) return res.status(400).json({ error: '신청 종류를 골라 주세요.' });
   if (!row.consent) return res.status(400).json({ error: '개인정보 수집·이용에 동의해 주세요.' });

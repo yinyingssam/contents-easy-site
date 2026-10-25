@@ -21,6 +21,36 @@
   });
 })();
 
+// 유입 채널 기억하기: UTM이 붙은 링크로 들어오면 30일 동안 기억한다(마지막 UTM 기준).
+// UTM이 없으면 외부 사이트에서 왔을 때 그 사이트 주소(도메인)만 기억한다.
+const UTM_KEY = 'ce-source';
+const UTM_FIELDS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'];
+const UTM_DAYS = 30;
+
+const readSource = () => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(UTM_KEY) || 'null');
+    if (saved && Date.now() - saved.at < UTM_DAYS * 86400000) return saved;
+  } catch {}
+  return null;
+};
+
+(() => {
+  const params = new URLSearchParams(location.search);
+  const utm = {};
+  UTM_FIELDS.forEach((k) => { const v = params.get(k); if (v) utm[k] = v.trim().slice(0, 100); });
+  let ref = '';
+  try {
+    const host = document.referrer ? new URL(document.referrer).hostname : '';
+    if (host && host !== location.hostname) ref = host.replace(/^www\./, '');
+  } catch {}
+  const prev = readSource();
+  let next = null;
+  if (Object.keys(utm).length) next = { ...utm, referrer: ref, at: Date.now() };
+  else if (ref && (!prev || !prev.utm_source)) next = { referrer: ref, at: Date.now() };
+  if (next) { try { localStorage.setItem(UTM_KEY, JSON.stringify(next)); } catch {} }
+})();
+
 // 신청 폼
 (() => {
   const form = document.getElementById('apply-form');
@@ -40,6 +70,11 @@
       consent: form.consent.checked,
       website: form.website.value,
     };
+    const source = readSource();
+    if (source) {
+      UTM_FIELDS.forEach((k) => { if (source[k]) data[k] = source[k]; });
+      if (source.referrer) data.referrer = source.referrer;
+    }
     if (!data.name) return show('이름을 적어 주세요.', 'error'), form.name.focus();
     if (!data.contact) return show('연락처를 적어 주세요.', 'error'), form.contact.focus();
     if (!data.kind) return show('신청 종류를 골라 주세요.', 'error');
