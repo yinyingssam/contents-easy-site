@@ -90,7 +90,7 @@ a { color: inherit; }
   line-height: 1.16;
   letter-spacing: -0.035em;
 }
-.hero h1 em { font-style: normal; color: var(--sky); }
+.hero h1 em { font-style: normal; color: var(--white); text-shadow: 3px 3px 0 var(--sky); }
 .lead { margin-top: 24px; max-width: 34em; font-size: 1.1rem; color: rgba(255, 255, 255, .86); }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 32px; }
 .fact { margin-top: 18px; font-size: .95rem; color: rgba(255, 255, 255, .7); }
@@ -268,6 +268,7 @@ a { color: inherit; }
   .nav-links { display: none; }
   .nav .btn-sm { margin-left: auto; padding: 0 12px; font-size: .88rem; }
   .logo img { height: 32px; }
+  .hero h1 em { text-shadow: 2px 2px 0 var(--sky); }
   .hero { padding-bottom: 64px; }
   .section, .apply { padding: 64px 0; }
   .services { grid-template-columns: 1fr; }
