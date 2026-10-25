@@ -91,7 +91,8 @@
     async function call(method, body) {
       const r = await fetch('/api/admin', {
         method,
-        headers: { 'x-admin-password': getPass(), ...(body ? { 'Content-Type': 'application/json' } : {}) },
+        // 특수문자·한글도 보낼 수 있게 인코딩한다 (서버에서 다시 푼다)
+        headers: { 'x-admin-password': encodeURIComponent(getPass()),...(body ? { 'Content-Type': 'application/json' } : {}) },
         body: body ? JSON.stringify(body) : undefined,
       });
       const data = await r.json().catch(() => ({}));

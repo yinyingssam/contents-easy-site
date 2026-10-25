@@ -17,7 +17,9 @@ module.exports = async (req, res) => {
   res.setHeader('X-Robots-Tag', 'noindex, nofollow');
   const pass = process.env.ADMIN_PASSWORD;
   if (!pass) return res.status(500).json({ error: 'Vercel 환경변수에 ADMIN_PASSWORD를 넣고 Redeploy 해 주세요.' });
-  if (!same(req.headers['x-admin-password'] || '', pass)) return res.status(401).json({ error: '비밀번호가 맞지 않아요.' });
+  let given = String(req.headers['x-admin-password'] || '');
+  try { given = decodeURIComponent(given); } catch {}
+  if (!same(given.trim(), pass.trim())) return res.status(401).json({ error: '비밀번호가 맞지 않아요.' });
   if (!SB_URL || !SB_KEY) return res.status(500).json({ error: 'Supabase 연결 정보가 없어요.' });
 
   if (req.method === 'GET') {
